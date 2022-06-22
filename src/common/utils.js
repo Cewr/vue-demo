@@ -20,5 +20,3 @@ export function copy(text) {
         })
     }
 }
-
-export const strSplit = (str) => str?.split(/[^a-zA-Z\u4e00-\u9fa5]/).filter((i) => !!i) || [];

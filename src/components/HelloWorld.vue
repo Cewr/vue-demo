@@ -1,29 +1,36 @@
 <template>
   <div class="root">
     <div class="header">ZTE SO</div>
-    <el-input v-model="input" size="large" clearable @keyup.enter='fetchApi(input)' placeholder="任意符号分隔多个"
-      class="input-with-select">
+    <el-input v-model="input" size="large" clearable @keyup.enter='fetchApi' :placeholder="{
+      getDomains: '逗号或空格分隔多个公司名称',
+      domain2all: '输入单个域名',
+      company2all: '输入单个公司名称',
+    }[select]" class="input-with-select">
       <template #prepend>
-        <el-select v-model="select" size="large" placeholder="Select" style="width: 100px">
-          <el-option label="公司" value="1" />
-          <el-option label="部门" value="2" />
+        <el-select v-model="select" size="large" placeholder="Select" style="width: 120px">
+          <el-option label="公司域名" value="getDomains" />
+          <el-option label="域名查询" value="domain2all" />
+          <el-option label="公司查询" value="company2all" />
         </el-select>
       </template>
       <template #append>
-        <el-button :icon="Search" plain @click="fetchApi(input)" size="large" class="submit-btn" />
+        <el-button :icon="Search" plain @click="fetchApi" size="large" class="submit-btn" />
       </template>
     </el-input>
+
 
     <div class="main-container" v-loading="loading">
       <div class="main-content">
         <el-scrollbar height="421px" always>
-          <div class="list-collapse">
+          <pre style="text-align: left; white-space: pre-wrap"><code>{{ JSON.stringify(result, null, 4) }}</code></pre>
+
+          <!-- <div class="list-collapse">
             <el-collapse v-for="key in Object.keys(result)" v-model="activeTags">
               <el-collapse-item :title="key" :name="key">
                 <el-tag class="item-tag" v-for="tag in result[key]">{{ tag }}</el-tag>
               </el-collapse-item>
             </el-collapse>
-          </div>
+          </div> -->
         </el-scrollbar>
       </div>
 
@@ -51,7 +58,7 @@
 import qs from 'qs';
 import { Search, Download, CopyDocument } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { downloadTxt, copy, strSplit } from '../common/utils'
+import { downloadTxt, copy } from '../common/utils'
 import moment from 'moment'
 
 export default {
@@ -62,7 +69,7 @@ export default {
   data() {
     return {
       input: '',
-      select: '1',
+      select: 'getDomains',
 
       loading: false,
 
@@ -75,24 +82,45 @@ export default {
     Search
   }),
   methods: {
-    fetchApi: function (name) {
-      const ls = strSplit(name);
-      if (!ls.length || this.loading) return;
+    fetchApi: function () {
+      const { input, loading, select } = this;
+      if (!input || loading) return;
       this.loading = true;
 
-      fetch(`http://49.235.105.117:8081/getDomain${ls.length === 1 ? '' : 's'}`, {
+      let url = select;
+      let value = input;
+
+      if (url === 'getDomains') {
+        const ls = value.split(/[\s,\uff0c]/).filter((i) => !!i);
+        if (ls.length > 1) {
+          value = ls.join()
+        } else {
+          url = 'getDomain'
+        }
+      }
+
+      const key = {
+        getDomains: 'entnames',
+        getDomain: 'entname',
+        domain2all: 'domain',
+        company2all: 'entname'
+      }[url]
+
+
+
+      fetch(`http://49.235.105.117:8081/${url}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: qs.stringify({
-          [`entname${ls.length === 1 ? '' : 's'}`]: ls.join(),
+          [key]: value,
         })
       }).then(res => res.json()).then(res => {
         this.result = res;
-        this.activeTags = ls;
       })
-        .catch(() => {
+        .catch((e) => {
+          console.log('e>>>>>', e)
           ElMessage.error('获取失败，请重试')
         })
         .finally(() => {
@@ -100,7 +128,7 @@ export default {
         });
     },
     onCopy: function () {
-      const text = JSON.stringify(this.result);
+      const text = JSON.stringify(this.result, null, 4);
       copy(text).then(() => {
         ElMessage.success('Copy successful')
       }).catch(() => {
@@ -108,7 +136,7 @@ export default {
       })
     },
     onDownload: function () {
-      const text = JSON.stringify(this.result);
+      const text = JSON.stringify(this.result, null, 4);
       downloadTxt(moment(new Date()).format('YY-MM-DD_hh-mm_s'), text);
     }
   }
@@ -119,7 +147,7 @@ export default {
 <style scoped lang="less">
 .root {
   width: 1000px;
-  height: 672px;
+  height: 732px;
   max-width: 85vw;
   max-height: 90vh;
   position: fixed;
@@ -131,7 +159,8 @@ export default {
 
   .header {
     font-weight: bold;
-    font-size: 40px;
+    font-size: 45px;
+    color: #008fd5;
     line-height: 100px;
   }
 
@@ -147,7 +176,7 @@ export default {
   .main-container {
     border: 1px solid #dcdfe6;
     margin: 15px 0;
-    height: 500px;
+    height: 580px;
     border-radius: 10px;
     position: relative;
     display: flex;
@@ -160,6 +189,8 @@ export default {
     .main-content {
       flex: 1;
       padding: 15px 0px 10px;
+      background: #f6f8fa;
+      border-radius: 10px;
 
       .el-scrollbar {
         padding: 0 15px;
