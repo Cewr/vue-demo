@@ -21,16 +21,21 @@
 
     <div class="main-container" v-loading="loading">
       <div class="main-content">
-        <el-scrollbar height="421px" always>
-          <pre style="text-align: left; white-space: pre-wrap"><code>{{ JSON.stringify(result, null, 4) }}</code></pre>
+        <el-scrollbar height="511px" always>
 
-          <!-- <div class="list-collapse">
-            <el-collapse v-for="key in Object.keys(result)" v-model="activeTags">
-              <el-collapse-item :title="key" :name="key">
-                <el-tag class="item-tag" v-for="tag in result[key]">{{ tag }}</el-tag>
-              </el-collapse-item>
-            </el-collapse>
-          </div> -->
+          <div class="code-field">
+            <div class="unfold-list">
+              <div class="unfold" v-for="val in JSON.stringify(result, null, 4).split(/\n/)">
+                <el-icon
+                  :class="(val?.replace(/[^\{\}\[\]]/g, '').length === 1 && val?.replace(/\s/g, '').length > 2) || val.includes('...') ? 'show' : 'hide'"
+                  @click="onUnfold(val)">
+                  <ArrowDown :class="val.includes('...') ? 'rotate' : ''" />
+                </el-icon>
+              </div>
+            </div>
+
+            <pre class="pre-code"><code>{{ JSON.stringify(result, null, 4).replace(/"..."/g, '...') }}</code></pre>
+          </div>
         </el-scrollbar>
       </div>
 
@@ -56,7 +61,7 @@
 
 <script>
 import qs from 'qs';
-import { Search, Download, CopyDocument } from '@element-plus/icons-vue'
+import { Search, Download, CopyDocument, ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { downloadTxt, copy } from '../common/utils'
 import moment from 'moment'
@@ -73,11 +78,12 @@ export default {
 
       loading: false,
 
+      resultOrigin: {},
       result: {},
       activeTags: []
     }
   },
-  components: { Download, CopyDocument },
+  components: { Download, CopyDocument, ArrowDown },
   setup: () => ({
     Search
   }),
@@ -117,6 +123,7 @@ export default {
           [key]: value,
         })
       }).then(res => res.json()).then(res => {
+        this.resultOrigin = JSON.parse(JSON.stringify(res));
         this.result = res;
       })
         .catch((e) => {
@@ -138,6 +145,15 @@ export default {
     onDownload: function () {
       const text = JSON.stringify(this.result, null, 4);
       downloadTxt(moment(new Date()).format('YY-MM-DD_hh-mm_s'), text);
+    },
+    onUnfold: function (val) {
+      const key = val.replace(/[":,\s\[\{]/g, '')
+      if (key.includes('...')) {
+        const key2 = key.replace('...', '')
+        this.result[key2] = this.resultOrigin[key2]
+      } else {
+        this.result[key] = '...'
+      }
     }
   }
 }
@@ -168,7 +184,7 @@ export default {
     width: 100%;
 
     .submit-btn {
-      width: 80px;
+      width: 100px;
       color: #777;
     }
   }
@@ -193,16 +209,41 @@ export default {
       border-radius: 10px;
 
       .el-scrollbar {
-        padding: 0 15px;
+        padding-right: 15px;
 
-        .item-title {
-          text-align: left;
-          padding-bottom: 5px;
-          font-size: 15px;
-        }
+        .code-field {
+          display: flex;
 
-        .el-empty {
-          height: 100%;
+          .unfold-list {
+            width: 15px;
+            padding: 0 8px;
+
+            .unfold {
+              height: 15px;
+              font-size: 15px;
+              color: #409eff;
+
+              .show {
+                cursor: pointer;
+
+                .rotate {
+                  transform: rotate(-90deg);
+                  color: #067ffb;
+                }
+              }
+
+              .hide {
+                opacity: 0;
+              }
+            }
+          }
+
+          .pre-code {
+            flex: 1;
+            text-align: left;
+            white-space: pre-wrap;
+            margin: 0;
+          }
         }
       }
     }
