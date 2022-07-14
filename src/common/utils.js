@@ -7,7 +7,7 @@ export function downloadTxt(filename, text) {
 
 export function copy(text) {
     if (navigator.clipboard && window.isSecureContext) {
-        return navigator.clipboard.writeText(textToCopy);
+        return navigator.clipboard.writeText(text);
     } else {
         const ele = document.createElement('textarea');
         ele.setAttribute('readonly', 'readonly');

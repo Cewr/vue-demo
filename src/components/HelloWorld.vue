@@ -175,7 +175,7 @@ export default {
 
   .header {
     font-weight: bold;
-    font-size: 45px;
+    font-size: 50px;
     color: #008fd5;
     line-height: 100px;
   }
