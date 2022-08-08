@@ -144,7 +144,7 @@ export default {
     },
     onDownload: function () {
       const text = JSON.stringify(this.result, null, 4);
-      downloadTxt(moment(new Date()).format('YY-MM-DD_hh-mm_s'), text);
+      downloadTxt(moment(new Date()).format('YY-MM-DD_HH-mm_s'), text);
     },
     onUnfold: function (val) {
       const key = val.replace(/[":,\s\[\{]/g, '')
